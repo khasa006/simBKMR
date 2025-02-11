@@ -64,7 +64,7 @@ This repository contains analysis code for two projects related to my PhD thesis
 ## How to Use This Repository
 1. Clone this repository:
    ```sh
-   git clone https://github.com/yourusername/repository-name.git
+   git clone https://github.com/khasa006/simBKMR.git
    ```
 2. Navigate to the project folder:
    ```sh
