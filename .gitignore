@@ -48,12 +48,11 @@ vignettes/*.pdf
 .Thumbs.db
 Thumbs.db
 
-# R projects 
+# R projects
 *.Rproj
 
 # Directories
 docs/
-data/
 development/
 macros/
 output/
