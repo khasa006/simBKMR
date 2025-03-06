@@ -53,6 +53,7 @@ Thumbs.db
 
 # Directories
 docs/
+# data/
 development/
 macros/
 output/
@@ -92,9 +93,9 @@ rsconnect/
 *.Rda
 
 # csv data
-*.csv
-*.CSV
-*.Csv
+#*.csv
+#*.CSV
+#*.Csv
 
 # sas data
 *.sas7bdat
