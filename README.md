@@ -82,5 +82,5 @@ The accepted *Research in Statistics* study proposes a simulation-calibrated PIP
 For any questions or clarifications, feel free to contact me at [khasa006@fiu.edu].
 
 ## License
-The repository's [LICENSE](LICENSE) contains the **Creative Commons CC0 1.0 Universal public-domain dedication**, not MIT. The project authors have chosen CC0 for original research scripts and datasets they are authorized to release. Third-party datasets, source materials, and software dependencies remain subject to their own terms. Do not assume this CC0 dedication covers redistributed NHANES source data or material owned by third parties.
+The repository's [LICENSE](LICENSE) contains the **Creative Commons CC0 1.0 Universal public-domain dedication**. The project authors have chosen CC0 for original research scripts and datasets they are authorized to release. Third-party datasets, source materials, and software dependencies remain subject to their own terms. Do not assume this CC0 dedication covers redistributed NHANES source data or material owned by third parties.
 
