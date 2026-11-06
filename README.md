@@ -59,7 +59,9 @@ This repository contains analysis code for two projects related to my PhD thesis
 #### Real Data Analysis
 - `bloodMelatDataAnalysis_20250123.R`
 
-## Project 2: [To Be Added]
+## Project 2: Dynamic Thresholding Framework for BKMR
+
+The accepted *Research in Statistics* study proposes a simulation-calibrated PIP selection threshold depending on response CV and sample size. See [Project 2 documentation](project2_dynamic_threshold/README.md), [numerical verification](docs/NUMERICAL_VERIFICATION_2026-11-06.md), and [release/import checklist](docs/IMPORT_AND_RELEASE_CHECKLIST_2026-11-06.md). **Selected original R scripts and all six saved PIP CSV inputs are now committed on the draft pull-request branch.** Published coefficients and selection-frequency summaries were independently checked from saved outputs; full original BKMR MCMC was not rerun.
 
 ## How to Use This Repository
 1. Clone this repository:
@@ -80,5 +82,5 @@ This repository contains analysis code for two projects related to my PhD thesis
 For any questions or clarifications, feel free to contact me at [khasa006@fiu.edu].
 
 ## License
-This project is licensed under the [MIT License](LICENSE).
+The repository's [LICENSE](LICENSE) contains the **Creative Commons CC0 1.0 Universal public-domain dedication**, not MIT. The project authors have chosen CC0 for original research scripts and datasets they are authorized to release. Third-party datasets, source materials, and software dependencies remain subject to their own terms. Do not assume this CC0 dedication covers redistributed NHANES source data or material owned by third parties.
 
