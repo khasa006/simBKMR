@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite this software release and the relevant research article."
+title: "simBKMR: BKMR sensitivity and dynamic-threshold research code"
+type: software
+authors:
+  - family-names: Hasan
+    given-names: Kazi Tanvir
+  - family-names: Odom
+    given-names: Gabriel
+  - family-names: Bursac
+    given-names: Zoran
+  - family-names: Lucchini
+    given-names: Roberto
+  - family-names: Ibrahimou
+    given-names: Boubakari
+repository-code: "https://github.com/khasa006/simBKMR"
+url: "https://github.com/khasa006/simBKMR"
+license: CC0-1.0
+version: 1.0.0
+date-released: 2026-11-06
+abstract: >-
+  Research scripts and selected saved simulation outputs accompanying two studies:
+  Bayesian kernel machine regression sensitivity to data distribution and
+  simulation-calibrated dynamic posterior inclusion probability thresholds.
+  Key numerical summaries have been checked against saved outputs, but
+  full historical MCMC workflows have not been independently rerun.
