@@ -1,0 +1,557 @@
+---
+title: "cognitive_bkmr"
+author: "Kazi Tanvir Hasan"
+date: "2022-10-29"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  set.seed(1113)
+)
+```
+
+```{r, message = FALSE}
+library(nhanesA)
+#library(haven)
+#library(psych)
+#library(tableone)
+library(survey)
+library(bkmr)
+library(table1)
+library(missRanger)
+library(mice)
+library(finalfit)
+library(gtsummary)
+library(tidyverse)
+```
+
+
+
+
+# Dataset preparation
+
+
+
+## NHANES dataset 11-12
+
+```{r, 11_12}
+demographicG <- nhanes('DEMO_G')
+medicalConditionsG <- nhanes('MCQ_G')
+cognitiveFunctionG <- nhanes('CFQ_G')
+bloodMetalG <- nhanes('PBCD_G')
+urineMetalG <- nhanes('UHM_G')
+diabetesG <- nhanes('DIQ_G')
+smokingCigaretteG <- nhanes('SMQ_G')
+bmiG <- nhanes('BMX_G')
+bloodPressureCholesterolG <- nhanes('BPQ_G')
+alcoholUseG <- nhanes('ALQ_G')
+```
+
+
+
+## NHANES dataset 13-14
+
+```{r, 13-14}
+demographicH <- nhanes('DEMO_H')
+medicalConditionsH <- nhanes('MCQ_H')
+cognitiveFunctionH <- nhanes('CFQ_H')
+bloodMetalH <- nhanes('PBCD_H')
+urineMetalH <- nhanes('UM_H')
+diabetesH <- nhanes('DIQ_H')
+smokingCigaretteH <- nhanes('SMQ_H')
+bmiH <- nhanes('BMX_H')
+bloodPressureCholesterolH <- nhanes('BPQ_H')
+alcoholUseH <- nhanes('ALQ_H')
+```
+
+
+
+## Append files
+
+```{r, append}
+demographicInfo_df <- bind_rows(demographicG, demographicH) 
+diabetesInfo_df <- bind_rows(diabetesG, diabetesH)
+smokingInfo_df <- bind_rows(smokingCigaretteG, smokingCigaretteH)
+alcoholInfo_df <- bind_rows(alcoholUseG, alcoholUseH)
+bloodPressureCholesterolInfo_df <- bind_rows(bloodPressureCholesterolG, bloodPressureCholesterolH)
+bmiInfo_df <- bind_rows(bmiG, bmiH)
+bloodMetalInfo_df <- bind_rows(bloodMetalG, bloodMetalH)
+urineMetalInfo_df <- bind_rows(urineMetalG, urineMetalH)
+cognitiveInfo_df <- bind_rows(cognitiveFunctionG, cognitiveFunctionH)
+medicalInfo_df <- bind_rows(medicalConditionsG, medicalConditionsH)
+```
+
+
+
+## Re-code files
+
+```{r, demographic_data}
+demographicInfo_df <- demographicInfo_df  %>% 
+  mutate(
+    # "Male" = 1, "Female" = 0
+    GENDER = case_when(
+      RIAGENDR == 1 ~ "Male",
+      RIAGENDR == 2 ~ "Female"
+    ),
+     # "0 - 59" = 99, "60 - 64" = 0, "65–69" = 1, "70–74" = 2, "75-79" = 3, ">= 80" = 4
+     # AGE = case_when(
+     #   RIDAGEYR <= 59 ~ 99,
+     #   RIDAGEYR >= 60 & RIDAGEYR <= 64 ~ 0,
+     #   RIDAGEYR >= 65 & RIDAGEYR <= 69 ~ 1,
+     #   RIDAGEYR >= 70 & RIDAGEYR <= 74 ~ 2,
+     #   RIDAGEYR >= 75 & RIDAGEYR <= 79 ~ 3,
+     #   RIDAGEYR >= 80 ~ 4
+     # ),
+    # "mexican american" = 1, "other Hispanic" = 2, "non hispanic white" = 3, "non hispanic black" = 4, "other race" = 5
+    RACE = case_when(
+      RIDRETH1 == 1 ~ "Mexican American",
+      RIDRETH1 == 2 ~ "Other Hispanic",
+      RIDRETH1 == 3 ~ "Non Hispanic White",
+      RIDRETH1 == 4 ~ "Non Hispanic Black",
+      RIDRETH1 == 5 ~ "Other Race"
+    ),
+    # "married" = 1, "widowed" = 2, "divorced" = 3, "separated" = 4, "never married" = 0, "living with partner" = 6, "refused" = 99, "unknown" = 99 
+    MARTLS = case_when(
+      DMDMARTL == 1 ~ "Married",
+      DMDMARTL == 2 ~ "Widowed",
+      DMDMARTL == 3 ~ "Divorced",
+      DMDMARTL == 4 ~ "Separated",
+      DMDMARTL == 5 ~ "Never Married",
+      DMDMARTL == 6 ~ "Living with Partner",
+      DMDMARTL == 77 ~ "unknown",
+      DMDMARTL == 99 ~ "unknown"
+    ),
+    # "<High school" = 1, "High school" = 2; ">High school" = 3, "unknown" = 99, "refused" = 99
+    EDUCL = case_when(
+      DMDEDUC2 <= 2 ~ "<High School",
+      DMDEDUC2 == 3 ~ "High School",
+      DMDEDUC2 > 3 & DMDEDUC2 <=5 ~ ">High School",
+      DMDEDUC2 == 7 ~ "unknown",
+      DMDEDUC2 == 9 ~ "unknown"
+    ) 
+  ) %>% 
+  select(
+    SEQN, GENDER, RIDAGEYR , RACE, EDUCL, MARTLS, INDFMPIR, WTINT2YR, WTMEC2YR, SDMVSTRA, SDMVPSU
+  ) %>% 
+  rename(AGE = RIDAGEYR, PRTIO = INDFMPIR)
+```
+
+```{r, medical_conditions}
+medicalInfo_df <- medicalInfo_df %>% 
+  mutate(
+    # "yes" = 1, "no" = 0, "unknown" = 99, "refused" = 1
+    STROKE = case_when(
+      MCQ160F == 1 ~ "Yes",
+      MCQ160F == 2 ~ "No",
+      MCQ160F == 7 ~ "Yes",
+      MCQ160F == 9 ~ "unknown"
+    ),
+    # "yes" = 1, "no" = 0, "unknown" = 99, "refused" = 1
+    HATTACK = case_when(
+      MCQ160E == 1 ~ "Yes",
+      MCQ160E == 2 ~ "No",
+      MCQ160E == 7 ~ "Yes",
+      MCQ160E == 9 ~ "unknown"
+    ) 
+  ) %>% 
+  select(SEQN, STROKE, HATTACK)
+```
+
+```{r, diabetes}
+diabetesInfo_df <- diabetesInfo_df %>% 
+  mutate(
+    # "yes" = 1, "no" = 0, "borderline" = 2, "unknown" = 99
+    DIABETES = case_when(
+      DIQ010 == 1 ~ "Yes",
+      DIQ010 == 2 ~ "No",
+      DIQ010 == 3 ~ "Borderline",
+      DIQ010 == 7 ~ "unknown",
+      DIQ010 == 9 ~ "unknown"
+    )
+  ) %>% 
+  select(SEQN, DIABETES) 
+```
+
+```{r, smoking_cigarette}
+smokingInfo_df <- smokingInfo_df %>% 
+  mutate(
+    # "current" = 1,  "former" = 2, "never" = 0
+    SMQS = case_when(
+      SMQ020 == 2 ~ "Never",
+      SMQ020 == 1 & SMQ040 == 1 ~ "Current",
+      SMQ020 == 1 & SMQ040 == 2 ~ "Current",
+      SMQ020 == 1 & SMQ040 == 3 ~ "Former",
+      SMQ020 == 7 ~ "Current",
+      SMQ040 == 7 ~ "Current",
+      SMQ020 == 9 ~ "unknown",
+      SMQ020 == 9 ~ "unknown"
+    )
+  ) %>% 
+  select(SEQN, SMQS)
+```
+
+```{r, bmi}
+bmiInfo_df <- bmiInfo_df %>% 
+  # mutate(
+  #   # "<18.5" = 1, "18.5–24.9" = 2,  "25–29.9" = 3, "30+" = 4
+  #   BMI = case_when(
+  #     BMXBMI < 18.5 ~ 1,
+  #     BMXBMI >= 18.5 & BMXBMI < 25 ~ 2,
+  #     BMXBMI >= 25 & BMXBMI <= 29.9 ~ 3,
+  #     BMXBMI > 29.9 ~ 4
+  #   )
+  # ) %>% 
+   select(SEQN, BMXBMI) %>% 
+  rename(BMI = BMXBMI)
+ 
+```
+
+```{r, blood_pressure_cholesterol_total}
+bloodPressureCholesterolInfo_df <- bloodPressureCholesterolInfo_df  %>% 
+  mutate(
+    # "yes" = 1, "no" = 0, "unknown" = 99
+    BPS = case_when(
+      BPQ020 == 1 ~ "yes",
+      BPQ020 == 2 ~ "No",
+      BPQ020 == 7 ~ "unknown",
+      BPQ020 == 9 ~ "unknown"
+    ),
+    BCS = case_when(
+      BPQ080 == 1 ~ "Yes",
+      BPQ080 == 2 ~ "No",
+      BPQ080 == 7 ~ "unknown",
+      BPQ080 == 9 ~ "unknown"
+    )
+  ) %>% 
+  select(SEQN, BPS, BCS)
+```
+
+```{r, alcohol_use}
+alcoholInfo_df <- alcoholInfo_df %>% 
+  filter(ALQ101 == 1) %>% 
+  select(SEQN, ALQ120Q) %>% 
+  rename(ALQS = ALQ120Q) %>% 
+  mutate(
+    ALQS = recode(ALQS, "777" = 99, "999" = 99)
+  )
+```
+
+```{r, blood_heavy_metal}
+bloodMetalInfo_df <- bloodMetalInfo_df %>% 
+  mutate(LBXBPB = LBXBPB * 10) %>% 
+  select(SEQN, LBXBPB, LBXBCD, LBXTHG, LBXBSE, LBXBMN) %>% 
+  rename(BLEAD = LBXBPB, 
+    BCADMIUM = LBXBCD,
+    BMERCURY = LBXTHG,
+    BSELEUM = LBXBSE, 
+    BMANGE = LBXBMN
+  ) 
+```
+
+```{r,urine_heavy_metal}
+urineMetalInfo_df <- urineMetalInfo_df %>% 
+  select(
+    SEQN, URXUBA, URXUCD, URXUCO, URXUMN, URXUPB, URXUSN, URXUSR, URXUUR
+  ) %>% 
+  rename(
+    UBARIUM = URXUBA,
+    UCADMIUM = URXUCD,
+    UCOBALT = URXUCO,
+    UMANGE = URXUMN,
+    ULEAD = URXUPB,
+    UTIN = URXUSN,
+    USTOUM = URXUSR,
+    UURANIUM = URXUUR
+  )
+```
+
+```{r, cognitive-function}
+cognitiveInfo_df <- cognitiveInfo_df %>% 
+  filter(CFASTAT == 1 & CFDCCS == 1) %>% 
+  mutate(
+    CERADIM = (CFDCST1 + CFDCST2 + CFDCST3) / 3
+  ) %>% 
+  select(
+  SEQN, CERADIM, CFDCSR, CFDAST, CFDDS
+  ) %>% 
+  rename(
+    CERADDR = CFDCSR,
+    AFT = CFDAST,
+    DST = CFDDS
+  )
+```
+
+
+
+## Merge all files
+
+```{r, merge}
+cognitiveProject_df <- 
+  left_join(cognitiveInfo_df, demographicInfo_df, by = 'SEQN') %>%
+  left_join(., diabetesInfo_df, by = 'SEQN') %>% 
+  left_join(., smokingInfo_df, by = 'SEQN') %>%
+  left_join(., alcoholInfo_df, by = 'SEQN') %>%
+  left_join(., bloodPressureCholesterolInfo_df, by = 'SEQN') %>%
+  left_join(., bmiInfo_df, by = 'SEQN') %>%
+  left_join(., bloodMetalInfo_df, by = 'SEQN') %>%
+   left_join(., urineMetalInfo_df, by = 'SEQN') %>%
+  left_join(., medicalInfo_df, by = 'SEQN')
+```
+
+<!-- ## Create dependent variable (Cognitive Status) -->
+
+<!-- ```{r} -->
+
+<!-- # Education dependent z score -->
+
+<!-- CSTATUS <- cognitiveProject_df %>% -->
+
+<!--   select(EDUCL, CERADIM, CERADDR, AFT, DST) %>% -->
+
+<!--   group_by(EDUCL) %>% -->
+
+<!--   mutate_at(vars(CERADIM, CERADDR, AFT, DST), scale) %>% -->
+
+<!--   mutate( -->
+
+<!--     CSTATUS = (CERADIM + CERADDR + AFT + DST)/4 -->
+
+<!--   ) %>% -->
+
+<!--   select(CSTATUS) -->
+
+<!-- ``` -->
+
+
+
+
+## Select required variables
+
+```{r, variable-selection}
+cognitiveData_df <- cognitiveProject_df %>% 
+  group_by(EDUCL) %>% 
+  mutate_at(vars(CERADIM, CERADDR, AFT, DST), ~(scale(.) %>% as.vector)) %>% 
+  mutate(
+    CSCORE = (CERADIM + CERADDR + AFT + DST)/4
+  ) %>% 
+  # mutate(
+  #   CSTATUS = case_when(
+  #     # "low" = 1, "high" = 0
+  #     CSCORE <= -1 ~ 0,
+  #     CSCORE > -1 ~ 1
+  #   )
+  # ) %>% 
+  mutate(
+    EDUCL = na_if(EDUCL, "unknown"),
+    DIABETES = na_if(DIABETES, "unknown"),
+    HATTACK = na_if(HATTACK, "unknown"),
+    STROKE = na_if(STROKE, "unknown"),
+    MARTLS = na_if(MARTLS, "unknown"),
+    BPS = na_if(BPS, "unknown"),
+    BCS = na_if(BCS, "unknown"),
+    SMQS = na_if(SMQS, "unknown"),
+    WTMEC4YR = WTMEC2YR/2,
+    # Define indicator for analysis population of interest: adults aged 60 and over with a valid cognitive status value
+    inAnalysis = (AGE >= 60 & !is.na(CSCORE))
+  )  %>%
+  select(
+    SEQN, GENDER, AGE, MARTLS, PRTIO, RACE, EDUCL, BPS, BCS, DIABETES,
+    BMI, ALQS, SMQS, STROKE, HATTACK, BLEAD, BCADMIUM, BMERCURY, BSELEUM,
+    BMANGE, UBARIUM, UCADMIUM, UCOBALT, UMANGE, ULEAD, UTIN, USTOUM, UURANIUM, 
+    CSCORE, WTMEC4YR, SDMVSTRA, SDMVPSU, inAnalysis
+  ) %>%
+  mutate_at(
+    vars(
+      GENDER, MARTLS, RACE,  EDUCL, BPS, BCS, DIABETES, SMQS, STROKE, HATTACK, 
+      SDMVPSU
+    ),
+    factor
+  )
+```
+
+
+
+## Define Survey Design for covariates
+
+```{r, survy-design}
+# Define survey design for overall dataset
+cognitiveSurveyDesign_svyd  <- svydesign(
+  data = cognitiveData_df, 
+  ids = ~SDMVPSU, 
+  strata = ~SDMVSTRA,
+  weights = ~WTMEC4YR, 
+  nest = TRUE,
+  survey.lonely.psu = "adjust"
+)
+cognitiveSurveyData_svyd <- subset(cognitiveSurveyDesign_svyd, inAnalysis)
+```
+
+
+
+
+# Data analysis
+
+
+
+## Descresptive statistics
+
+```{r, summary}
+cognitiveSurveyData_df <- cognitiveSurveyData_svyd[["variables"]] %>%
+  tibble()
+
+cognitiveSurveyData_df[, 2:28] %>%  tbl_summary(
+   
+    statistic = list(
+        all_continuous() ~ "{mean} ({sd})",
+        all_categorical() ~ "{n} ({p}%)"
+    ),
+    digits = all_continuous() ~ 2,
+    missing_text = "(Missing)"
+) %>%
+    modify_caption("**Baseline Characteristics from NHANES 2011–2014, of Adults 
+More Than 60 Years Old**") %>%
+    bold_labels()
+
+cognitiveSurveyData_df  %>%
+  summarise_all(list(~is.na(.))) %>%
+  pivot_longer(
+    everything(),
+    names_to = "variables", values_to="missing"
+  ) %>%
+  count(variables, missing) %>%
+  ggplot(
+    aes(
+      x = n,
+      y = variables,
+      fill=missing
+    )
+  ) +
+  scale_fill_manual(values = c("navy", "gold")) +
+  labs(
+    title = "Proportion of Missinig Values",
+    x = "Proportion",
+    y = "Variables"
+  ) +
+  geom_col(position = "fill")
+```
+
+
+
+## Scale transformation of metals
+
+```{r}
+cognitiveScaleData_df <- cognitiveSurveyData_df %>% 
+  mutate_at(
+    vars(
+      BLEAD, BCADMIUM, BMERCURY, BSELEUM,BMANGE, UBARIUM, UCADMIUM, UCOBALT,
+      UMANGE, ULEAD, UTIN, USTOUM, UURANIUM
+    ), ~(scale(.) %>% as.vector)
+  ) 
+```
+
+
+## Create testing and training datasets for blood metals
+
+```{r}
+# Create a column based on missing values
+bloodDataInd <- cognitiveScaleData_df %>% 
+  select(
+    GENDER, AGE, MARTLS, PRTIO, RACE, EDUCL, BPS, BCS, DIABETES, BMI, ALQS, 
+    SMQS, STROKE, HATTACK, BLEAD, BCADMIUM, BMERCURY, BSELEUM, BMANGE, CSCORE
+  ) %>% 
+  mutate(indicator = +if_any(everything(), is.na)) 
+```
+
+
+### Testing data (Data with no missing values) for blood metals
+
+```{r}
+# Data for bkmr analysis
+bloodBKMR <- bloodDataInd %>% 
+  filter(indicator == 0)
+```
+
+
+### Training data (Data with missing values) for blood metals
+
+```{r}
+bloodMetalMissing <- bloodDataInd %>% 
+  filter(indicator == 1)
+```
+
+#### Blood metlas BKMR analysis data
+
+```{r}
+# Create a column based on metals missing values
+bloodMetalInd <- bloodMetalMissing %>% 
+  mutate(missInd = +if_any(c(BLEAD, BCADMIUM, BMERCURY, BSELEUM,BMANGE), is.na)) 
+```
+
+```{r}
+bloodLasso <- bloodMetalInd %>% 
+  filter(missInd == 0) %>% 
+  select(CSCORE, BLEAD, BCADMIUM, BMERCURY, BSELEUM, BMANGE) 
+```
+
+
+
+## Create testing and training datasets for urine metals
+
+```{r}
+# Create a column based on missing values
+urineDataInd <- cognitiveScaleData_df %>% 
+  select(
+    GENDER, AGE, MARTLS, PRTIO, RACE, EDUCL, BPS, BCS, DIABETES, BMI, ALQS, 
+    SMQS, STROKE, HATTACK, UBARIUM, UCADMIUM, UCOBALT,  UMANGE, ULEAD, UTIN, 
+    USTOUM, UURANIUM, CSCORE
+  ) %>% 
+  mutate(indicator = +if_any(everything(), is.na)) 
+```
+
+
+### Testing data (Data with no missing values) for urine metals
+
+```{r}
+# Data for bkmr analysis
+urineBKMR <- urineDataInd %>% 
+  filter(indicator == 0)
+```
+
+
+### Training data (Data with missing values) for urine metals
+
+```{r}
+urineMetalMissing <- urineDataInd %>% 
+  filter(indicator == 1)
+```
+
+#### Urine metlas Lasso analysis data
+
+```{r}
+# Create a column based on metals missing values
+urineMetalInd <- urineMetalMissing %>% 
+  mutate(
+    missInd = +if_any(
+      c(
+        UBARIUM, UCADMIUM, UCOBALT, UMANGE, ULEAD, UTIN, USTOUM, UURANIUM
+      ), 
+      is.na
+    )
+  ) 
+```
+
+```{r}
+urineLasso <- urineMetalInd %>% 
+  filter(missInd == 0) %>% 
+   select(
+     CSCORE, UBARIUM, UCADMIUM, UCOBALT, UMANGE, ULEAD, UTIN, USTOUM, UURANIUM
+   ) 
+```
+
+
+
+

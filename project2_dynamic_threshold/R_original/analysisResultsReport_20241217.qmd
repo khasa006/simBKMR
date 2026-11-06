@@ -1,0 +1,202 @@
+---
+title: "Analysis Results Report: Bayesian Kernel Machine Regression (BKMR) and Logistic Model Fitting"
+author: "Kazi Tanvir Hasan"
+date: "`r Sys.Date()`"
+format: docx
+---
+
+
+
+## 1. Overview
+
+The primary objective of this analysis was to evaluate the performance of the Bayesian Kernel Machine Regression (BKMR) model under varying conditions of sample sizes and coefficient of variation (CV) values. In our prior analysis, we found that the test size (the probability of rejecting the null hypothesis when it is true) of the BKMR method varies wildly according to the CV of the response. With a posterior inclusion probability (PIP) threshold fixed at 0.5, the BKMR test size varies from 0% (strongly conservative) for CV values close to 0 to over 50% (extremely anti-conservative) for CV values greater than 10. The analysis focused on identifying associations between simulated metal exposures and outcomes with varying signal strengths (as measured by CV), using the 95th percentile of PIP as the key performance metric. Our goal was to predict this PIP 95th percentile as a function of the observed sample CV and the sample size, enabling us to build a table of PIP threshold values that would preserve as close as possible to a 5% test size across changes in CV and sample size.
+
+To achieve this, 50 simulated datasets (out of 100 total) were analyzed for each combination of CV and sample size. Additionally, a four-parameter logistic (Richard’s curve; <https://en.wikipedia.org/wiki/Generalised_logistic_function>) model was fit to predict PIP values and assess threshold performance for identifying “positive” tests.
+
+The analysis was conducted in three phases:
+
+1. **BKMR model evaluation:** Estimating the 95th percentile of PIP ($PIP_{q_{95}}$) across sample size and CV combinations.
+
+2. **Logistic model fitting:** Predicting $PIP_{q_{95}}$ using a non-linear regression approach with a Richard Curve.
+
+3. **Threshold comparison:** Comparing the performance of the new threshold function with the existing threshold of 0.5.
+
+
+
+## 2. Methodology
+
+
+### Phase 1: BKMR Model Evaluation
+
+The Bayesian Kernel Machine Regression (BKMR) model was used to evaluate the impact of CV and sample size on PIP values.
+
+#### 2.1 Data Inputs
+
+- **Coefficient of Variation (CV):** A total of 41 CV values were considered, ranging from 0.0235 to 15.0000.
+
+- **Sample Sizes:** Six sample sizes were evaluated: 150, 300, 600, 1000, 2000, and 2934.
+
+#### 2.2 Model Setup
+
+- **Software/Method:** The BKMR model was implemented using the `kmbayes` function in R.
+
+- **Iterations:** The model ran for 10,000 Markov chain Monte Carlo (MCMC) iterations.
+
+- **Metric:** The 95th percentile of PIP ($PIP_{q_{95}}$) was extracted for each combination of CV and sample size.
+
+
+### Phase 2: Logistic Model Fitting
+
+To explore the relationship between $PIP_{q_{95}}$, CV, and sample size, a non-linear regression model was fitted using the Richard Curve.
+
+![](cvPIP.png)
+
+#### 2.3 Model Specification
+
+The logistic model equation is:
+
+$$
+PIP_{q_{95}} = K - \frac{A}{(C + e^{-\beta_1 \cdot x_1})^{\beta_2 \cdot x_2}}
+$$
+
+Where:
+
+- **A:** Left asymptote, fixed at 0.
+
+- **K:** Right asymptote.
+
+- **C:** Constant, typically set to 1.
+
+- **β1:**, **β2:** Midpoint shift parameters for CV and sample size.
+
+- **x1:** Log-transformed CV $\log_2(\text{CV})$.
+
+- **x2:** Log-transformed sample size $\log_{10}(\text{Sample Size})$ \)).
+
+#### Non-Linear Regression Procedure
+
+To model the relationship between the quantile of the principal component ($PIP_q95$) and predictor variables, we applied a non-linear regression approach using the nls function from the stats package in R. This method fits the specified non-linear model to the data by minimizing the sum of squared residuals between the observed and predicted values. The model includes parameters for the scaling factors and exponents, specifically A, K, C, $β1$, and $β2$. The predictor variables for the model were the logarithms of the coefficient of variation (CV) and sample size, transformed as $x1=log⁡2(CV)$ and $x2=log⁡10(sampleSize$), respectively.
+
+Initial values for the parameters K, C, $β1$, and $β2$ were set to 1 to aid convergence, based on prior knowledge of the system and typical values observed in similar modeling approaches. The model fitting was performed iteratively, with the optimization procedure aiming for parameter estimates that minimize the residual sum of squares. Convergence was assessed through the analysis of the model's residuals and parameter estimates, ensuring the absence of significant bias or misfit.
+
+The `nls` function from R `stats` package utilizes a Levenberg-Marquardt algorithm to iteratively adjust the parameter estimates, optimizing the fit of the non-linear model. This package is widely used in statistical modeling for cases where the relationship between the dependent and independent variables cannot be described by a linear equation. To improve the reliability of the fit, care was taken to validate model assumptions and check for the adequacy of the residuals. Further model diagnostics were performed to ensure the robustness and stability of the estimated parameters.
+
+#### 2.4 Model Results
+
+The logistic model demonstrated a strong fit with highly significant parameter estimates:
+
+| Parameter | Estimate | Std. Error | t-Value | p-Value |
+|-----------|----------|------------|---------|---------|
+| **K**     | 1.4346   | 0.1053     | 13.62   | < 2e-16 *** |
+| **C**     | 1.5995   | 0.0905     | 17.68   | < 2e-16 *** |
+| **β1**    | 0.5662   | 0.0407     | 13.90   | < 2e-16 *** |
+| **β2**    | 0.5135   | 0.0276     | 18.61   | < 2e-16 *** |
+
+- **Residual Standard Error:** 0.05644
+- **Convergence:** Achieved after 8 iterations with a tolerance of $(2.242 \times 10^{-6})$.
+
+#### 2.5 Model Performance
+
+- The observed $PIP_{q_{95}}$ values were compared to the predicted $PIP_{q_{95}}$ values.
+
+- A strong correlation confirmed the model’s ability to accurately capture the relationship between CV, sample size, and PIP.
+
+- Visual plots further illustrated the fit, showing minimal deviation between observed and predicted values.
+
+- A limitation is that the curve is overconservative for large sample sizes and anti-conservative for smaller sample sizes. This will need to be explored in future research.
+
+
+
+### Phase 3: Threshold Function Development and Comparison
+
+#### 2.6 New Threshold Function
+
+A custom threshold function, `pipThresh_fn`, was developed to determine a dynamic PIP threshold for identifying "positive" results:
+
+$$
+\text{Threshold} = A + \frac{K - A}{(C + e^{-\beta_1 \cdot \log_2(\text{CV})})^{\beta_2 \cdot \log_{10}(\text{Sample Size})}}
+$$
+
+Substituting values:
+
+- $A = 0$
+
+- $K = 1.4346$
+
+- $C = 1.5995$
+
+- $\beta_1 = 0.5662$
+
+- $\beta_2 = 0.5135$.
+
+#### 2.7 Comparative Analysis: Old vs. New Threshold
+
+- **Old Threshold:** Fixed at 0.5.
+- **New Threshold:** Dynamically calculated using the `pipThresh_fn`.
+
+**Key Comparison Metrics**
+
+- Test size for the old and new thresholds was evaluated across all CV and sample size combinations.
+
+- Results were visualized using:
+
+  - Log2-transformed CV values.
+  
+  - Log10-transformed sample sizes.
+  
+
+
+## 3. Key Findings
+
+
+### Model Fit ($PIP_{q_{95}}$ Prediction)
+- The logistic model accurately predicted $PIP_{q_{95}}$, as demonstrated by the strong correlation between observed and predicted values.
+
+- The Richard Curve model effectively captured the relationships between CV, sample size, and PIP.
+
+![](pipComparision.png)
+
+### Threshold Comparison
+- The new threshold function outperformed the fixed threshold (0.5).
+
+- The new threshold was more adaptive and sensitive to variations in CV and sample size.
+
+- It identified a greater number of "positive" tests, particularly for smaller CV values and larger sample sizes.
+
+
+### Test Size Comparison
+- The test sizes calculated under the new threshold were closer to the ideal 5% target compared to those calculated under the old threshold.
+
+- The new threshold improved sensitivity, especially in cases with smaller sample sizes or lower CV values.
+
+
+### Impact of Sample Size and CV on PIP
+- Smaller sample sizes were associated with higher $PIP_{q_{95}}$ values.
+
+- Smaller sample sizes displayed greater sensitivity to variations in CV.
+
+
+
+## 5. Conclusion
+
+This analysis successfully demonstrated:
+
+- The effectiveness of the logistic model in predicting $PIP_{q_{95}}$.
+
+- The superiority of the new threshold function over the traditional threshold of 0.5.
+
+- The significant impact of sample size and CV on PIP values.
+
+The findings emphasize the importance of adaptive thresholds for improving sensitivity in statistical tests, particularly when evaluating associations under varying sample sizes and exposure variability.
+
+
+
+## 6. Next Steps
+
+- Evaluate the remaining 50 simulated datasets for each CV and sample size combination.
+
+- Assess the performance of the new threshold function (`pipThresh_fn`) on these datasets.
+
+- Further compare results to the old threshold (0.5) to confirm findings.
+
+This comprehensive approach will ensure robust validation of the model and threshold performance across diverse conditions.
