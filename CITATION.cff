@@ -17,7 +17,6 @@ repository-code: "https://github.com/khasa006/simBKMR"
 url: "https://github.com/khasa006/simBKMR"
 license: CC0-1.0
 version: 1.0.0
-date-released: 2026-11-06
 abstract: >-
   Research scripts and selected saved simulation outputs accompanying two studies:
   Bayesian kernel machine regression sensitivity to data distribution and
