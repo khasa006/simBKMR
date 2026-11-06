@@ -36,3 +36,7 @@ The ZIP includes historical R/Rmd/Qmd files for Projects 1 and 2, the six `mleDa
 4. Review terms for any third-party data and check source scripts for private information.
 5. Merge reviewed PR, publish a versioned GitHub release, and archive it through Zenodo. Only then cite stable release URL/DOI in journal badge form.
 6. Use explicit caveats: saved-output calculation verification is not a claim of full end-to-end reproducibility or frequentist Type I error control.
+
+## Post-import update — November 6, 2026
+
+The author committed and pushed the selected original code and six saved PIP CSV datasets through GitHub Desktop. GitHub confirms all six CSVs and original analysis scripts are present on the draft branch. Pull request #1 currently reports a clean merge state. Prior statements in this document that the files have not been uploaded or remain to be imported describe the earlier staging stage and are now superseded. **No full original MCMC rerun has been performed.**
