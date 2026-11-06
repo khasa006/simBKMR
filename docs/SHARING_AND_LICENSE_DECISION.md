@@ -17,8 +17,8 @@ The project authors have confirmed that **selected original research scripts and
 
 - [x] Research authors selected CC0 1.0 and authorized release of selected eligible research materials.
 - [x] README license statement aligned with existing CC0 file on draft branch.
-- [ ] Selected original scripts added with unmodified copies.
-- [ ] Six PIP-output CSV datasets screened and added, or deposited separately with permanent DOI.
+- [x] Selected original scripts added to the draft branch as historical copies.
+- [x] Six PIP-output CSV datasets added to the draft branch; source provenance and downstream release review remain necessary.
 - [ ] Restricted and third-party sources excluded or linked upstream.
 - [ ] Reproducible R package environment and relative execution paths documented.
 - [ ] Draft PR reviewed and merged.
