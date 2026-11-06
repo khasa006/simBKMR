@@ -61,7 +61,7 @@ This repository contains analysis code for two projects related to my PhD thesis
 
 ## Project 2: Dynamic Thresholding Framework for BKMR
 
-The accepted *Research in Statistics* study proposes a simulation-calibrated PIP selection threshold depending on response CV and sample size. See [Project 2 documentation](project2_dynamic_threshold/README.md), [numerical verification](docs/NUMERICAL_VERIFICATION_2026-11-06.md), and [release/import checklist](docs/IMPORT_AND_RELEASE_CHECKLIST_2026-11-06.md). **The selected original R scripts and six PIP CSV inputs are currently staged in a local release-candidate ZIP, not yet all committed to GitHub.** Published coefficients and selection-frequency summaries were independently checked from saved outputs; full original BKMR MCMC was not rerun.
+The accepted *Research in Statistics* study proposes a simulation-calibrated PIP selection threshold depending on response CV and sample size. See [Project 2 documentation](project2_dynamic_threshold/README.md), [numerical verification](docs/NUMERICAL_VERIFICATION_2026-11-06.md), and [release/import checklist](docs/IMPORT_AND_RELEASE_CHECKLIST_2026-11-06.md). **Selected original R scripts and all six saved PIP CSV inputs are now committed on the draft pull-request branch.** Published coefficients and selection-frequency summaries were independently checked from saved outputs; full original BKMR MCMC was not rerun.
 
 ## How to Use This Repository
 1. Clone this repository:
